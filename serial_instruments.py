@@ -14,39 +14,39 @@ class serialInstrument:
         self.device = device
         self.debug = debug
         try:
-            self.inst = serial.Serial(device, 19200, timeout=0.01)
-        except serial.serialutil.SerialException as e:
-            if str(e).find('No such file or directory') != -1:
-                print("ERROR: Path to serial device does not exist ("
-                      + device + ")")
-                sys.exit()
-            elif str(e).find("Permission denied:"):
-                print "Getting permission to change permissions of " + device
-                os.system("gksudo chmod 777 " + device)
-                try:
-                    self.inst = serial.Serial(device, 19200, timeout=0.01)
-                    print "Changed permissions and opened device"
-                except:
-                    print "Error opening device!"
-                    sys.exit()
-            else:
-                print e
-                print("Can't open path to device, have you ran: \n"
-                      + "sudo chmod 777 " + device)
-                sys.exit()
+            print('Initializing...')
+            self.inst =  open(self.device, 'rb+')
 
-        tmp = self.read()
-        while tmp != False:
-            print "Flushing serial queue"
-            print tmp
-            tmp = self.read()
+        except FileNotFoundError:
+            print("ERROR: Path to USBTMC device does not exist ("                      + device + ")")
+            sys.exit(1)
+        except PermissionError:
+            print("Getting permission to change permissions of " + device)
+            os.system("sudo chmod 777 " + device)
+            try:
+                self.inst = serial.Serial(device, 19200, timeout=0.01)
+                print("Changed permissions and opened device")
+            except Exception as e:
+                print(f"Error opening device, {e}!")
+                sys.exit(1)
+        
+        self.write('DATa:ENCdg ASCIi')
+        #tmp = self.read()
+        #while tmp != False:
+        #    print("Flushing serial queue")
+        #    print(tmp)
+        #    tmp = self.read()
+
+        print('Done Initializing....')
 
     def write(self, command):
         """ Writes a command to the instrument.
         """
-        self.inst.write(command + "\n")
+        print(f'Writing [{command}] command...')
+        self.inst.write((command + "\n").encode())
+        print(f'Command [{command}] written...')
         if self.debug:
-            print command
+            print(command)
         if command != self.prevCommand:
             self.prevCommand = command
 
@@ -55,27 +55,34 @@ class serialInstrument:
         This function will block until the instrument responds.
         """
         out = ""
-        tmp = self.inst.readlines(9999)
+        tmp = self.inst.readline()
         if self.debug:
-            print tmp
-        if tmp == []:
+            print(tmp)
+        if tmp == b'':
+            print('response NULL')
             return False
         else:
-            out = ''
-            for temp in tmp:
-                out += temp
-            while out.find('\n') == -1:
-                tmp = self.inst.readlines(9999)
-                for temp in tmp:
-                    out += temp
-            return out.rstrip('\n')
+            out = tmp.decode(errors='ignore').strip()
+            if self.debug:
+                print(f'Decoded response:{out}')
+            return out
+            #out = ''
+            #for temp in tmp:
+            #    out += temp
+            #while out.find('\n') == -1:
+            #    tmp = self.inst.readline()
+            #    for temp in tmp:
+            #        out += temp
+            #return out.rstrip('\n')
 
 
     def ask(self, command):
         """ Writes a command to the instrument and reads the response.
         """
-        self.write(command + "\n")
+        self.write(command)
+        time.sleep(0.2)
         tmp = self.read()
+        print(tmp)
         while tmp == False:
             tmp = self.read()
         return tmp
@@ -90,7 +97,7 @@ class serialInstrument:
         """ Resets the instrument.
         This is a fairly universal command so should work on most devices.
         """
-        print "Resetting machine"
+        print("Resetting machine")
         self.inst.write("*RST")
 
 
@@ -146,10 +153,10 @@ class tek2024:
         self.name = self.inst.getName()
         self.debug = debug
         if self.name == False:
-            print "Uh Oh! The machine on " + device + " isn't responding"
+            print("Uh Oh! The machine on " + device + " isn't responding")
             sys.exit()
         else:
-            print "Connected to: " + self.name.rstrip('\n')
+            print("Connected to: " + self.name.rstrip('\n'))
 
     def status(self):
         return self.inst.ask("STB?")
@@ -158,7 +165,7 @@ class tek2024:
         self.write("*OPC?")
         tmp = self.read()
         while tmp != "1" and tmp != False:
-            print "Waiting..." + str(tmp)
+            print("Waiting..." + str(tmp))
             tmp = self.read()
 
     def checkComplete(self):
@@ -197,20 +204,22 @@ class tek2024:
 
         if averages in self.available_averageSettings:
             if self.debug:
-                print "Setting averaging to " + str(averages) + " samples"
+                print("Setting averaging to " + str(averages) + " samples")
             self.write("ACQuire:MODe AVERage")
             self.write("ACQuire:NUMAVg " + str(averages))
             self.numAvg = averages
+            self.checkComplete()
         elif averages == 0 or averages == False:
             if self.debug:
-                print "Disabling averaging"
+                print("Disabling averaging")
             self.write("ACQuire:MODe SAMPLE")
             self.write("ACQuire:NUMAVg " + str(0))
             self.numAvg = 0
+            self.checkComplete()
         else:
             print("Number of averages must be in "
                   + str(self.available_averageSettings))
-            sys.exit()
+            return
 
     def set_autoRange(self, mode):
         """ Enables or disables autoranging for the device
@@ -266,19 +275,19 @@ class tek2024:
         """
         until = 0
         if num == False and self.numAvg == False:
-            print "Waiting for a single acquisition to finish"
+            print("Waiting for a single acquisition to finish")
             until = 1
         elif num != False:
             until = num
-            print "Waiting until " + str(until) + " acquisitions have been made"
+            print("Waiting until " + str(until) + " acquisitions have been made")
         else:
             until = self.numAvg
-            print "Waiting until " + str(until) + " acquisitions have been made"
+            print("Waiting until " + str(until) + " acquisitions have been made")
         last = 0
         done = self.get_numAcquisitions()
         while done < until:
             if done != last:
-                print "Waiting for " + str(until - done) + " acquisitions"
+                print("Waiting for " + str(until - done) + " acquisitions")
                 last = done
             done = self.get_numAcquisitions()
             time.sleep(0.1)
@@ -312,14 +321,14 @@ class tek2024:
                               "Setting horizontal scale to "
                               + str(set_div) + " s/div")
             if frequency != False and cycles != False:
-                print "Window width = " + str(set_div * 10.0) + " seconds"
+                print("Window width = " + str(set_div * 10.0) + " seconds")
         else:
-            print
-            print "=========================================================="
-            print "      WARNING: Appropriate time division not found"
-            print "           Horizontal scale remains unchanged"
-            print "=========================================================="
-            print
+            print()
+            print("==========================================================")
+            print("      WARNING: Appropriate time division not found")
+            print("           Horizontal scale remains unchanged")
+            print("==========================================================")
+            print()
         return set_div * 10.0
 
     def get_timeToCapture(self, frequency, cycles, averaging=1):
@@ -344,12 +353,12 @@ class tek2024:
         return (time_min, time_max)
 
     def get_transferTime(self, mode):
-        if mode == 'ASCII':
+        if mode == 'ASC':
             return 8.43393707275
         elif mode == 'RPBinary':
             return 4.0
         else:
-            print "Error getting transfer time"
+            print("Error getting transfer time")
 
     def find_minTdiv(self, frequency, min_cycles=2):
         """ Finds the minimum s/div that will allow a given number of
@@ -362,15 +371,15 @@ class tek2024:
         for tdiv in tmp:
             if min_div <= tdiv:
                 return tdiv
-        print
-        print '==================================================='
+        print()
+        print('===================================================')
         print('WARN: Cant fit ' + str(min_cycles) + ' cycles of '
               + str(frequency) + 'Hz into scope!')
         print('Will use ' + str(tmp[len(tmp) - 1]) + ' s/div instead,'
               + ' giving ' + str((tmp[len(tmp) - 1] * 10.0) / wavelength)
               + ' cycles')
-        print '==================================================='
-        print
+        print('===================================================')
+        print()
         return tmp[len(tmp) - 1]
 
 
@@ -485,7 +494,10 @@ class channel(tek2024):
                        0.2,
                        0.1,
                        0.05,
-                       0.02]
+                       0.02,
+                       0.01,
+                       0.005,
+                       0.002]
 
     def __init__(self, inst, channel):
         self.inst = inst
@@ -496,13 +508,13 @@ class channel(tek2024):
         """
         tmp = copy.copy(self.available_vdivs)
         if debug:
-            print 'asked to set vdiv to ' + str(s)
+            print('asked to set vdiv to ' + str(s))
         setVdiv = False
         for vdiv in tmp:
             if s <= vdiv:
                 setVdiv = vdiv
         if debug:
-            print 'best match is ' + str(setVdiv)
+            print('best match is ' + str(setVdiv))
         if setVdiv == False:
             print()
             print('===================================================')
@@ -525,6 +537,7 @@ class channel(tek2024):
         """
         count = 0
         for point in self.curve_raw:
+            point = int(point)
             if point > 250 or point < 5:
                 count += 1
             else:
@@ -554,7 +567,7 @@ class channel(tek2024):
                 # Increase V/div until no clipped data
                 set_vdiv = self.get_yScale()
                 if debug:
-                    print 'set_vdiv = ' + str(set_vdiv)
+                    print('set_vdiv = ' + str(set_vdiv))
                 if self.available_vdivs.index(set_vdiv) > 0:
                     best_div = self.available_vdivs[self.available_vdivs.index(set_vdiv) - 1]
                     if debug:
@@ -598,12 +611,12 @@ class channel(tek2024):
                     best_window = available_window
 
             if debug:
-                print 'bestWindow = ' + str(best_window)
+                print('bestWindow = ' + str(best_window))
 
             # if it's not the range were already using, set it
             if best_window != set_window:
                 if debug:
-                    print 'Setting new range' + str(best_window / 8.0)
+                    print('Setting new range' + str(best_window / 8.0))
                 self.set_vScale(best_window / 8.0)
                 print('Disabling averaging')
                 self.set_averaging(False)
@@ -642,7 +655,7 @@ class channel(tek2024):
         self.issueCommand("DATA:SOUrce CH" + str(self.channel),
                           "Setting data source to channel " + str(self.channel),
                           False)
-        if encoding == 'ASCII':
+        if encoding == 'ASC':
             self.issueCommand("DATA:ENCdg ASCIi",
                               "Setting data encoding to ASCII", False)
             self.encoding = 'ASCII'
@@ -675,7 +688,7 @@ class channel(tek2024):
         self.issueCommand("DATA:SOUrce CH" + str(self.channel),
                           "Setting data source to channel " + str(self.channel))
         if debug:
-            print "Requesting waveform setup information"
+            print("Requesting waveform setup information")
 
         self.write("WFMPre?")
 
@@ -683,6 +696,8 @@ class channel(tek2024):
         while tmp == False:
             tmp = self.read()
         out = tmp
+
+        print(tmp)
 
         y_offset = False
         y_mult = False
@@ -702,27 +717,27 @@ class channel(tek2024):
         y_offset = float(out[14])
 
         if y_offset == False:
-            print
-            print "======================================================"
-            print "WARNING: Y-offset parameter was not returned by scope"
-            print "======================================================"
-            print
+            print()
+            print("======================================================")
+            print("WARNING: Y-offset parameter was not returned by scope")
+            print("======================================================")
+            print()
         if y_mult == False:
-            print
-            print "======================================================"
-            print "WARNING: Y-multiplier parameter was not returned by scope"
-            print "======================================================"
-            print
+            print()
+            print("======================================================")
+            print("WARNING: Y-multiplier parameter was not returned by scope")
+            print("======================================================")
+            print()
         if x_incr == False:
-            print
-            print "======================================================"
-            print "WARNING: X-increment parameter was not returned by scope"
-            print "======================================================"
-            print
+            print()
+            print("======================================================")
+            print("WARNING: X-increment parameter was not returned by scope")
+            print("======================================================")
+            print()
         if y_zero == False:
             y_zero = 0
 
-        print "Requesting waveform"
+        print("Requesting waveform")
         self.write("CURVE?")
         out = ''
         tmp = self.read()
@@ -731,25 +746,37 @@ class channel(tek2024):
 
         if encoding == 'BIN':
             tmp = tmp.split('#42500')[1]
-            data = np.array(unpack('>%sB' % (len(tmp)), tmp))
-        elif encoding == 'ascii':
-            out = tmp.split(":CURVE ")[1]
+
+            if isinstance(tmp, str):
+                tmp = tmp.encode(errors='ignore')
+            if b'#4' in tmp:
+                header_index = tmp.find(b'#4')
+                tmp = tmp[header_index + 5:]
+            data = np.array(unpack(f'>{len(tmp)}B', tmp))
+            
+            #data = np.array(unpack('>%sB' % (len(tmp)), tmp))
+
+        elif encoding == 'ASC':
+            #print(tmp)
+            #out = tmp.split(":CURVE ")[1]
+            out=tmp
             data = out.split(',')
         else:
-            print "Error: Waveform encoding was not understood, exiting!"
+            print("Error: Waveform encoding was not understood, exiting!")
             sys.exit()
 
         self.curve_raw = data
-        data_y = map(lambda x: ((int(x) - y_offset) * y_mult) + y_zero, data)
-        data_x = map(lambda x: x * x_incr , range(len(data_y)))
+        #print(data)
+        data_y = list(map(lambda x: ((int(x) - y_offset) * y_mult) + y_zero, data))
+        data_x = list(map(lambda x: x * x_incr , range(len(data_y))))
 
         if x_num != False and x_num != len(data_y):
-            print
-            print "======================================================"
-            print "WARNING: Data payload was stated as " + str(self.x_num) + " points"
-            print "but " + str(len(data_x)) + " points were returned"
-            print "======================================================"
-            print
+            print()
+            print("======================================================")
+            print("WARNING: Data payload was stated as " + str(self.x_num) + " points")
+            print("but " + str(len(data_x)) + " points were returned")
+            print("======================================================")
+            print()
 
         self.y_offset = y_offset
         self.y_mult = y_mult
@@ -757,10 +784,10 @@ class channel(tek2024):
         self.y_zero = y_zero
 
         if self.did_clip() == True:
-            print
-            print "======================================================="
-            print "WARNING: Data payload possibly contained clipped points"
-            print "======================================================="
-            print
+            print()
+            print("=======================================================")
+            print("WARNING: Data payload possibly contained clipped points")
+            print("=======================================================")
+            print()
 
         return [data_x, data_y]

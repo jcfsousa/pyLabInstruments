@@ -12,13 +12,13 @@ class usbtmc:
                       + device + ")")
                 sys.exit()
             elif str(e).find("Permission denied:"):
-                print "Getting permission to change permissions of " + device
+                print("Getting permission to change permissions of " + device)
                 os.system("gksudo chmod 777 " + device)
                 try:
                     self.FILE = os.open(device, os.O_RDWR)
-                    print "Changed permissions and opened device"
+                    print("Changed permissions and opened device")
                 except:
-                    print "Error opening device!"
+                    print("Error opening device!")
                     sys.exit()
             else:
                 print("Can't open path to device, have you ran: \n"
@@ -48,7 +48,7 @@ class agilent33220A:
         self.meas = usbtmc(device)
         self.name = self.meas.getName()
         self.voltage(0.1)
-        print "Connected to: " + self.name.rstrip('\n')
+        print("Connected to: " + self.name.rstrip('\n'))
 
     def write(self, command):
         """ Send an arbitrary command directly to the scope
@@ -100,7 +100,7 @@ class agilent33220A:
         elif mode.find('user') != -1:
             self.meas.write("FUNC USER")
         else:
-            print 'Invalid waveform mode specified'
+            print('Invalid waveform mode specified')
             sys.exit()
 
     def voltage(self, amplitude=None):
@@ -141,7 +141,7 @@ class agilent33220A:
         elif impedance.find('max') != -1:
             self.meas.write("OUTP:LOAD MAX")
         else:
-            print 'ERROR: Invalid impedance parameter specified'
+            print('ERROR: Invalid impedance parameter specified')
             sys.exit()
 
     def dutyCycle(self, duty):
@@ -151,17 +151,17 @@ class agilent33220A:
             if duty >= 40 and duty <= 60:
                 self.meas.write("FUNC:SQU:DCYC %f" % duty)
             else:
-                print "ERROR: Above 10MHz valid duty cycle ranges are between 40% and 60%"
+                print("ERROR: Above 10MHz valid duty cycle ranges are between 40% and 60%")
                 sys.exit()
         else:
             if duty >= 20 and duty <= 80:
                 self.meas.write("FUNC:SQU:DCYC %f" % duty)
             else:
                 if self._frequency == 0:
-                    print "ERROR: Max duty cycle range is between 20% and 80%"
-                    print "WARNING: You specified a duty cycle without specifying a frequency"
+                    print("ERROR: Max duty cycle range is between 20% and 80%")
+                    print("WARNING: You specified a duty cycle without specifying a frequency")
                 else:
-                    print "ERROR: Max duty cycle range is between 20% and 80%"
+                    print("ERROR: Max duty cycle range is between 20% and 80%")
                 sys.exit()
 
     def output(self, enable):
