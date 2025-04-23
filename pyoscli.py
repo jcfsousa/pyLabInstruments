@@ -106,14 +106,14 @@ class MyCLI(cmd.Cmd):
         reps = input('    n acquitions > ')
         i=0 
 
-        now = datetime.now()
-        timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
 
         while i < int(reps):
             ch1_data = self.channel1.get_waveform()
             i += 1
             times, voltages = ch1_data[0], ch1_data[1]
 
+            now = datetime.now()
+            timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
             with open(f'{read_from_folder}/{read_from}_{field1}td_{vgem}v_{field2}td_{field3}td_{timestamp}.csv', 'w', newline='') as f:
                 writer = csv.writer(f)
                 writer.writerow(['date', f'{timestamp}'])
