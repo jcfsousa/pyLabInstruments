@@ -1,4 +1,5 @@
 from numpy import average
+from datetime import datetime
 import csv
 import serial_instruments
 import os
@@ -68,32 +69,66 @@ class MyCLI(cmd.Cmd):
             print(f'Channel number is int() and div is float(): {e}')
 
     def do_custom_acquisition(self, line):
-        acq_name = input('    Acquisition name > ')
-        save_folder = f'{self.output_folder}/{acq_name}'
+        '''
+        custom_acquisition – run and save oscilloscope acquisitions with metadata.
+        This function captures oscilloscope waveforms and saves them to a .csv file with experiment details. You can change base output_folder path on the > conf command.
+            - You will be prompted for metadata: field1, vgem, field2, field3.
+            - You can set oscilloscope averaging.
+            - You can choose how many acquisitions to perform.
+            - Data and metadata are saved to a CSV file for each acquisition on ~/{output_folder}/{read_charge_from}/{filename}.csv
+        '''
+        save_folder = f'{self.output_folder}/output'
         try:
             os.mkdir(save_folder)
+            print(f'Saving data on: {save_folder}')
         except Exception as e:
-            print(e)
+            print(f'Warning: {e}')
+    
+        read_from = input('    read charge from > ')
 
-        avrg = input('    set_average > ')
+        read_from_folder = f'{save_folder}/{read_from}'
+        try:
+            os.mkdir(read_from_folder)
+            print(f'Saving data on: {read_from_folder}')
+        except Exception as e:
+            print(f'Warning: {e}')
+
+        field1 = input('     field 1 > ').replace('.','-')
+        vgem = input('     vgem >').replace('.','-')
+        field2 = input('     field2 >').replace('.','-')
+        field3 = input ('    field3 >').replace('.','-')
+
+
+        avrg = input('    set osc average > ')
         if avrg != 0:
             self.do_averaging(avrg)
 
         reps = input('    n acquitions > ')
         i=0 
 
+        now = datetime.now()
+        timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
+
         while i < int(reps):
             ch1_data = self.channel1.get_waveform()
             i += 1
             times, voltages = ch1_data[0], ch1_data[1]
 
-            with open(f'{save_folder}/acq_{i}.csv', 'w', newline='') as f:
+            with open(f'{read_from_folder}/{read_from}_{field1}td_{vgem}v_{field2}td_{field3}td_{timestamp}.csv', 'w', newline='') as f:
                 writer = csv.writer(f)
+                writer.writerow(['date', f'{timestamp}'])
+                writer.writerow(['field1', f'{field1}', 'Td'])
+                writer.writerow(['vgem',f'{vgem}','V'])
+                writer.writerow(['field2', f'{field2}', 'Td'])
+                writer.writerow(['field3', f'{field3}', 'Td'])
                 writer.writerow(['Time', 'Voltage'])
                 writer.writerows(zip(times, voltages))
 
 
     def do_conf(self):
+        '''
+        Configure base output folder. The default is the script directory.
+        '''
         self.output_folder = input('    Base output folder > ')
 
     def do_exit(self, line):

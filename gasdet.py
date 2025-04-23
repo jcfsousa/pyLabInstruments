@@ -13,7 +13,7 @@ frequency = 1/period
 scope.set_hScale(frequency=frequency, cycles=8)  # Set the time scale to the mimimum that contains 8 waveforms
 #breakpoint()
 scope.set_averaging(128)  # Set the scope to do 16X averaging
-channel1.set_vScale(0.0002, debug=True)  # Set the voltage scale to 
+channel1.set_vScale(0.01, debug=True)  # Set the voltage scale to 
 #channel2.set_vScale(1)
 
 data_voltage = channel1.get_waveform(debug=True)  # Download the waveform from channel 1
@@ -23,7 +23,7 @@ data_current = channel2.get_waveform()  # Download the waveform from channel 2
 #print(data_current)
 
 
-test = False
+test = True
 
 if test:
     fig, ax1 = plt.subplots(figsize=(10,6))
