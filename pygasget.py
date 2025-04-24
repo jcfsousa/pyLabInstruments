@@ -1,9 +1,9 @@
 from numpy import average
 from datetime import datetime
 import csv
-import serial_instruments
+import lib.serial_instruments as serial_instruments
 import os
-import usb_instruments
+import lib.usb_instruments as usb_instruments
 import matplotlib.pyplot as plt
 import cmd
 import sys
@@ -12,7 +12,7 @@ import sys
 
 class MyCLI(cmd.Cmd):
     prompt = 'pyoscli> '
-    intro = "Welcome to my CLI. Type ? to list commands."
+    intro = "Welcome to pygasdet. Type ? to list commands."
     completekey = 'tab'
 
     def __init__(self):
@@ -109,6 +109,8 @@ class MyCLI(cmd.Cmd):
 
         reps = input('    n acquitions > ')
         i=0 
+
+        input('    press ENTER to start acquisition')
 
 
         while i < int(reps):

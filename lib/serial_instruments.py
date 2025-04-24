@@ -18,13 +18,19 @@ class serialInstrument:
             self.inst =  open(self.device, 'rb+')
 
         except FileNotFoundError:
-            print("ERROR: Path to USBTMC device does not exist ("                      + device + ")")
-            sys.exit(1)
+            print("ERROR: Path to USBTMC device does not exist (" + device + ")")
+            device = input('Input path to correct usbtmc > ')
+            try:
+                self.inst = open(device, '+rb')
+                self.device = device
+            except Exception as e:
+                print("ERROR: Path is still wrong. Disconnect device and connect again. Run 'sudo dmesg | tail' to check where the osciloscope is beeing mounted")
+                sys.exit(1)
         except PermissionError:
             print("Getting permission to change permissions of " + device)
             os.system("sudo chmod 777 " + device)
             try:
-                self.inst = serial.Serial(device, 19200, timeout=0.01)
+                self.inst = open(self.device, 'rb+')
                 print("Changed permissions and opened device")
             except Exception as e:
                 print(f"Error opening device, {e}!")
@@ -42,9 +48,9 @@ class serialInstrument:
     def write(self, command):
         """ Writes a command to the instrument.
         """
-        print(f'Writing [{command}] command...')
+        #print(f'Writing [{command}] command...')
         self.inst.write((command + "\n").encode())
-        print(f'Command [{command}] written...')
+        #print(f'Command [{command}] written...')
         if self.debug:
             print(command)
         if command != self.prevCommand:
@@ -707,7 +713,7 @@ class channel(tek2024):
             tmp = self.read()
         out = tmp
 
-        print(tmp)
+        #print(tmp)
 
         y_offset = False
         y_mult = False
@@ -726,7 +732,7 @@ class channel(tek2024):
         y_zero = float(out[13])
         y_offset = float(out[14])
         x_trigger = float(out[10])
-        print(f'x_trigger: {x_trigger} s')
+        #print(f'x_trigger: {x_trigger} s')
 
         if y_offset == False:
             print()

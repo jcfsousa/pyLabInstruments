@@ -1,5 +1,5 @@
-import serial_instruments
-import usb_instruments
+import lib.serial_instruments as serial_instruments
+import lib.usb_instruments as usb_instruments
 import matplotlib.pyplot as plt
 
 #scope = serial_instruments.tek2024('/dev/usbtmc0')
