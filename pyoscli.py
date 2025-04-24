@@ -19,7 +19,7 @@ class MyCLI(cmd.Cmd):
         super().__init__()
         self.stdin = sys.stdin
         self.stdout = sys.stdout
-        self.scope = serial_instruments.tek2024('/dev/usbtmc1')
+        self.scope = serial_instruments.tek2024('/dev/usbtmc0')
         self.channel1 = serial_instruments.channel(self.scope,1)
         self.channel2 = serial_instruments.channel(self.scope,2)
         self.output_folder = os.path.dirname(os.path.realpath(__file__))
