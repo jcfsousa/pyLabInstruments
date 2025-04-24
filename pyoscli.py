@@ -108,9 +108,9 @@ class MyCLI(cmd.Cmd):
 
 
         while i < int(reps):
-            ch1_data = self.channel1.get_waveform()
+            ch2_data = self.channel2.get_waveform()
             i += 1
-            times, voltages = ch1_data[0], ch1_data[1]
+            times, voltages = ch2_data[0], ch2_data[1]
 
             now = datetime.now()
             timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
