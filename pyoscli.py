@@ -19,7 +19,7 @@ class MyCLI(cmd.Cmd):
         super().__init__()
         self.stdin = sys.stdin
         self.stdout = sys.stdout
-        self.scope = serial_instruments.tek2024('/dev/usbtmc0')
+        self.scope = serial_instruments.tek2024('/dev/usbtmc1')
         self.channel1 = serial_instruments.channel(self.scope,1)
         self.channel2 = serial_instruments.channel(self.scope,2)
         self.output_folder = os.path.dirname(os.path.realpath(__file__))
@@ -40,6 +40,10 @@ class MyCLI(cmd.Cmd):
         except Exception as e:
             print(f'Error setting horizontal scale: {e}')
 
+    def do_timemainposition(self, line):
+        reference = self.scope.get_timeMainPosition()
+        print(f'Time main reference: {reference}')
+        print(type(reference))
 
     def do_averaging(self, n):
         try:

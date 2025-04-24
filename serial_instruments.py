@@ -331,6 +331,16 @@ class tek2024:
             print()
         return set_div * 10.0
 
+    def get_timeMainPosition(self):
+        '''
+        Queries the main time base horizontal position.
+        This value is the difference between the trigger point 
+        and the center graticule. Positive values place the
+        trigger before the center graticule.
+        '''
+        main_pos = self.ask("HORizontal:MAIn:POSition?")
+        return main_pos
+
     def get_timeToCapture(self, frequency, cycles, averaging=1):
         """ Calculates and returns the time (in seconds) for a capture
         to complete based on the given frequency, cycles, and number
@@ -715,6 +725,8 @@ class channel(tek2024):
         y_mult = float(out[12])
         y_zero = float(out[13])
         y_offset = float(out[14])
+        x_trigger = float(out[10])
+        print(f'x_trigger: {x_trigger} s')
 
         if y_offset == False:
             print()
@@ -768,7 +780,7 @@ class channel(tek2024):
         self.curve_raw = data
         #print(data)
         data_y = list(map(lambda x: ((int(x) - y_offset) * y_mult) + y_zero, data))
-        data_x = list(map(lambda x: x * x_incr , range(len(data_y))))
+        data_x = list(map(lambda x: (x * x_incr) + x_trigger , range(len(data_y))))
 
         if x_num != False and x_num != len(data_y):
             print()
