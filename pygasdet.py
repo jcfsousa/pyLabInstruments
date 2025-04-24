@@ -48,9 +48,30 @@ class MyCLI(cmd.Cmd):
     def do_averaging(self, n):
         try:
             n = int(n)
-            self.scope.set_averaging(n)
+            check = self.scope.set_averaging(n)
+            if check == 0:
+                print('Try again...')
+                n = input('    n average > ')
+                n = int(n)
+                check = self.scope.set_averaging(n)
+                if check == 0:
+                    print('Seems like you dont know how to read')
+                    print('You got kicked from the script for beeing dumb')
+                    sys.exit(1)
         except Exception as e:
             print(f'Please provide an int: {e}')
+            n = input('    n average > ')
+            n = int(n)
+            check = self.scope.set_averaging(n)
+            if check == 0:
+                print('Try again...')
+                n = input('    n average > ')
+                n = int(n)
+                check = self.scope.set_averaging(n)
+                if check == 0:
+                    print('Seems like you dont know how to read')
+                    print('You got kicked from the script for beeing dumb')
+                    sys.exit(1)
 
     def do_vscale(self, arg):
         '''
@@ -84,30 +105,49 @@ class MyCLI(cmd.Cmd):
         save_folder = f'{self.output_folder}/output'
         try:
             os.mkdir(save_folder)
-            print(f'Saving data on: {save_folder}')
+            print(f'        Saving data on: {save_folder}')
         except Exception as e:
-            print(f'Warning: {e}')
+            print(f'        Warning: {e}')
     
         read_from = input('    read charge from > ')
 
         read_from_folder = f'{save_folder}/{read_from}'
         try:
             os.mkdir(read_from_folder)
-            print(f'Saving data on: {read_from_folder}')
+            print(f'        Saving data on: {read_from_folder}')
         except Exception as e:
-            print(f'Warning: {e}')
+            print(f'        Warning: {e}')
 
-        field1 = input('     field 1 > ').replace('.','-')
-        vgem = input('     vgem >').replace('.','-')
-        field2 = input('     field2 >').replace('.','-')
-        field3 = input ('    field3 >').replace('.','-')
+        field1 = input('    field 1 > ').replace('.','-')
+        vgem = input('    vgem > ').replace('.','-')
+        field2 = input('    field2 > ').replace('.','-')
+        field3 = input ('    field3 > ').replace('.','-')
 
 
         avrg = input('    set osc average > ')
         if avrg != 0:
             self.do_averaging(avrg)
+        
+        try:
+            reps = int(input('    n acquitions > '))
+            if type(reps) != int or reps == 0:
+                print('            WARNING: input should be int and != 0')
+                try:
+                    reps = int(input('    n acquitions > '))
+                except Exception as e:
+                    print('You should learn how to read....')
+                    print('You got kicked from the script for beeing dumb....')
+                    sys.exit(1)
+        except Exception as e:
+            print(f'            WARNING: {e}')
+            print('            WARNING: input should be int and != 0')
+            try:
+                reps = int(input('    n acquitions > '))
+            except Exception as e:
+                print('You should learn how to read....')
+                print('You got kicked from the script for beeing dumb....')
+                sys.exit(1)
 
-        reps = input('    n acquitions > ')
         i=0 
 
         input('    press ENTER to start acquisition')

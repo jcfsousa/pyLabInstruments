@@ -88,7 +88,7 @@ class serialInstrument:
         self.write(command)
         time.sleep(0.2)
         tmp = self.read()
-        print(tmp)
+        #print(tmp)
         while tmp == False:
             tmp = self.read()
         return tmp
@@ -225,7 +225,7 @@ class tek2024:
         else:
             print("Number of averages must be in "
                   + str(self.available_averageSettings))
-            return
+            return 0
 
     def set_autoRange(self, mode):
         """ Enables or disables autoranging for the device
