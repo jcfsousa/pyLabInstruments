@@ -110,50 +110,56 @@ class MyCLI(cmd.Cmd):
         except Exception as e:
             print(f'        Warning: {e}')
 
+        vgem_study = input('  Are you doing a field study? (y/n) > ')
 
-            read_from = input('    read charge from > ')
+        if vgem_study not in ('y', 'n'):
+            print("Invalid input. Please enter 'y' or 'n'.")
+            return
 
-            read_from_folder = f'{save_folder}/{read_from}'
-            try:
-                os.mkdir(read_from_folder)
-                print(f'        Saving data on: {read_from_folder}')
-            except Exception as e:
-                print(f'        Warning: {e}')
+        read_from = input('    read charge from > ')
+        read_from_folder = f'{save_folder}/{read_from}'
+        try:
+            os.mkdir(read_from_folder)
+            print(f'        Saving data on: {read_from_folder}')
+        except Exception as e:
+            print(f'        Warning: {e}')
 
-            field1 = input('    field 1 > ').replace('.','-')
-            vgem = input('    vgem > ').replace('.','-')
-            field2 = input('    field2 > ').replace('.','-')
-            field3 = input ('    field3 > ').replace('.','-')
+        continue_loop = True
+        first_loop = True
 
+        while continue_loop:
+            if vgem_study == 'y' and first_loop or vgem_study == 'n':
+                field1 = input('    field 1 > ').replace('.', '-')
+                field2 = input('    field2 > ').replace('.', '-')
+                field3 = input('    field3 > ').replace('.', '-')
+                avrg = input('    set osc average > ')
+                if avrg != 0:
+                    self.do_averaging(avrg)
 
-            avrg = input('    set osc average > ')
-            if avrg != 0:
-                self.do_averaging(avrg)
-        
-            try:
-                reps = int(input('    n acquitions > '))
-                if type(reps) != int or reps == 0:
-                    print('            WARNING: input should be int and != 0')
-                    try:
-                        reps = int(input('    n acquitions > '))
-                    except Exception as e:
-                        print('You should learn how to read....')
-                        print('You got kicked from the script for beeing dumb....')
-                        sys.exit(1)
-            except Exception as e:
-                print(f'            WARNING: {e}')
-                print('            WARNING: input should be int and != 0')
                 try:
-                    reps = int(input('    n acquitions > '))
-                except Exception as e:
+                    reps = int(input('    n acquisitions > '))
+                    if reps <= 0:
+                        raise ValueError
+                except:
                     print('You should learn how to read....')
-                    print('You got kicked from the script for beeing dumb....')
+                    print('You got kicked from the script for being dumb....')
+                    sys.exit(1)
+            else:
+                # Mantém os campos anteriores
+                try:
+                    self.do_averaging(avrg)
+                    reps = int(input('    n acquisitions > '))
+                    if reps <= 0:
+                        raise ValueError
+                except:
+                    print('You should learn how to read....')
+                    print('You got kicked from the script for being dumb....')
                     sys.exit(1)
 
-            i=0 
-
+            vgem = input('    vgem > ').replace('.', '-')
             input('    press ENTER to start acquisition')
 
+            i = 0
             while i < int(reps):
                 ch2_data = self.channel2.get_waveform()
                 i += 1
@@ -165,12 +171,20 @@ class MyCLI(cmd.Cmd):
                     writer = csv.writer(f)
                     writer.writerow(['date', f'{timestamp}'])
                     writer.writerow(['field1', f'{field1}', 'Td'])
-                    writer.writerow(['vgem',f'{vgem}','V'])
+                    writer.writerow(['vgem', f'{vgem}', 'V'])
                     writer.writerow(['field2', f'{field2}', 'Td'])
                     writer.writerow(['field3', f'{field3}', 'Td'])
                     writer.writerow(['Time', 'Voltage'])
                     writer.writerows(zip(times, voltages))
 
+            if vgem_study == 'y':
+                choice = input('    Continue with new vgem? (y/n) > ').lower()
+                if choice != 'y':
+                    continue_loop = False
+                first_loop = False
+            else:
+                continue_loop = False
+    
 
     def do_conf(self):
         '''

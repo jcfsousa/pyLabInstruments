@@ -732,7 +732,7 @@ class channel(tek2024):
         y_zero = float(out[13])
         y_offset = float(out[14])
         x_trigger = float(out[10])
-        #print(f'x_trigger: {x_trigger} s')
+        print(f'x_trigger: {x_trigger} s')
 
         if y_offset == False:
             print()
