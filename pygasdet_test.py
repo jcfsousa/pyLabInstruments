@@ -12,8 +12,10 @@ import sys
 
 class MyCLI(cmd.Cmd):
     prompt = 'pyoscli> '
+    
     intro = "Welcome to pygasdet. Type ? to list commands."
     completekey = 'tab'
+     
 
     def __init__(self):
         super().__init__()
@@ -129,9 +131,11 @@ class MyCLI(cmd.Cmd):
 
         while continue_loop:
             if vgem_study == 'y' and first_loop or vgem_study == 'n':
+                resist = input('    resist  > ')
+                conden = input('    conden  > ') 
                 field1 = input('    field 1 > ').replace('.', '-')
-                field2 = input('    field2 > ').replace('.', '-')
-                field3 = input('    field3 > ').replace('.', '-')
+                field2 = input('    field 2 > ').replace('.', '-')
+                field3 = input('    field 3 > ').replace('.', '-')
                 avrg = input('    set osc average > ')
                 if avrg != 0:
                     self.do_averaging(avrg)
@@ -167,9 +171,11 @@ class MyCLI(cmd.Cmd):
 
                 now = datetime.now()
                 timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
-                with open(f'{read_from_folder}/{read_from}_{field1}td_{vgem}v_{field2}td_{field3}td_{timestamp}.csv', 'w', newline='') as f:
+                with open(f'{read_from_folder}/{read_from}_{resist}M_{conden}pF_{field1}td_{vgem}v_{field2}td_{field3}td_{timestamp}.csv', 'w', newline='') as f:
                     writer = csv.writer(f)
                     writer.writerow(['date', f'{timestamp}'])
+                    writer.writerow(['resist', f'{resist}'])
+                    writer.writerow(['conden', f'{conden}'])
                     writer.writerow(['field1', f'{field1}', 'Td'])
                     writer.writerow(['vgem', f'{vgem}', 'V'])
                     writer.writerow(['field2', f'{field2}', 'Td'])
