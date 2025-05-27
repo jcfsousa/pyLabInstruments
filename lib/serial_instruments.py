@@ -347,6 +347,10 @@ class tek2024:
         main_pos = self.ask("HORizontal:MAIn:POSition?")
         return main_pos
 
+    def set_timePosition(self, time):
+        time_pos = self.issueCommand("HORizontal:MAIn:POSition " + str(time), 'test')
+        return 
+
     def get_timeToCapture(self, frequency, cycles, averaging=1):
         """ Calculates and returns the time (in seconds) for a capture
         to complete based on the given frequency, cycles, and number

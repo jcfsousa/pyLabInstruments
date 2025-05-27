@@ -7,6 +7,7 @@ import lib.usb_instruments as usb_instruments
 import matplotlib.pyplot as plt
 import cmd
 import sys
+import time
 
 
 
@@ -99,7 +100,7 @@ class MyCLI(cmd.Cmd):
         '''
         custom_acquisition – run and save oscilloscope acquisitions with metadata.
         This function captures oscilloscope waveforms and saves them to a .csv file with experiment details. You can change base output_folder path on the > conf command.
-            - You will be prompted for metadata: field1, vgem, field2, field3.
+            - You will be prompted for metadata: resist, condens, field1, vgem, field2, field3.
             - You can set oscilloscope averaging.
             - You can choose how many acquisitions to perform.
             - Data and metadata are saved to a CSV file for each acquisition on ~/{output_folder}/{read_charge_from}/{filename}.csv
@@ -111,7 +112,7 @@ class MyCLI(cmd.Cmd):
             print(f'        Saving data on: {save_folder}')
         except Exception as e:
             print(f'        Warning: {e}')
-
+        
         vgem_study = input('  Are you doing a field study? (y/n) > ')
 
         if vgem_study not in ('y', 'n'):
@@ -190,8 +191,99 @@ class MyCLI(cmd.Cmd):
                 first_loop = False
             else:
                 continue_loop = False
-    
 
+    def do_custom_acquisition_full(self, line, 
+                                   read_from,
+                                   resist, conden,
+                                   field1, field2, field3,
+                                   avrg, reps,
+                                   vgem, fileno):
+        save_folder = f'{self.output_folder}/output'
+        
+        try:
+            os.mkdir(save_folder)
+            print(f'        Saving data on: {save_folder}')
+        except Exception as e:
+            print(f'        Warning: {e}')
+
+        read_from_folder = f'{save_folder}/{read_from}'
+        try:
+            os.mkdir(read_from_folder)
+            print(f'        Saving data on: {read_from_folder}')
+        except Exception as e:
+            print(f'        Warning: {e}')
+
+        self.do_averaging(avrg)
+        time.sleep(3)
+        i = 0
+        
+        while i < int(reps):
+            ch2_data = self.channel2.get_waveform()
+            vscale = self.channel2.get_yScale()
+            vscale = str(vscale).replace('.', '-')
+            i += 1
+            times, voltages = ch2_data[0], ch2_data[1]
+
+            now = datetime.now()
+            timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
+            with open(f'{read_from_folder}/{read_from}_{resist}M_{conden}pF_{field1}td_{vgem}v_{field2}td_{field3}td_{vscale}v_{timestamp}_#{fileno}.csv', 'w', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow(['date', f'{timestamp}'])
+                writer.writerow(['resist', f'{resist}'])
+                writer.writerow(['conden', f'{conden}'])
+                writer.writerow(['field1', f'{field1}', 'Td'])
+                writer.writerow(['vgem', f'{vgem}', 'V'])
+                writer.writerow(['field2', f'{field2}', 'Td'])
+                writer.writerow(['field3', f'{field3}', 'Td'])
+                writer.writerow(['vscale', f'{vscale}', 'V'])
+                writer.writerow(['Time', 'Voltage'])
+                writer.writerows(zip(times, voltages))
+    
+    def do_full_scale_acquisition(self, line):
+
+        # vgem_study = input('Doing a VGEM study? (y/n)? >')
+        # if vgem_study == 'y':
+        timeScale = input('What is the time scale? (in s)? > ')
+        read_from = input('Read charge from where? > ')
+        resist = input('Resist (M) > ')
+        conden = input('Conden (pF) > ') 
+        field1 = input('E/N 1 (Td) > ').replace('.', '-')
+        field2 = input('E/N 2 (Td) > ').replace('.', '-')
+        field3 = input('E/N 3 (Td) > ').replace('.', '-')
+        vgem = input('Vgem (V) > ').replace('.', '-')
+        avrg = input('Set osc average (4, 16, 64, 128)> ')
+        reps = int(input('# acquisitions > '))
+    
+        lampInterv = 72E-3
+
+        numberOfWindows = int(lampInterv / (10*float(timeScale))) + 1
+
+        self.scope.set_timePosition('0')
+        self.do_hscale(timeScale)
+
+        w = 0
+        for j in range(5, 10*numberOfWindows + 1, 10):
+            w += 1
+            self.scope.set_timePosition(str(j*float(timeScale) - float(timeScale)/2))
+            for i in [50E-3, 10E-3]:
+                div = float(eval(str(i), {"__builtins__": None}, {}))
+                self.channel2.set_vScale(div)
+                time.sleep(3)
+                self.do_custom_acquisition_full(line, 
+                                        read_from,
+                                        resist, conden,
+                                        field1, field2, field3,
+                                        avrg, reps,
+                                        vgem, w)
+                
+            
+
+
+
+
+
+        #self.scope.set_timePosition(str(15*float(timeScale)))
+    	
     def do_conf(self):
         '''
         Configure base output folder. The default is the script directory.
